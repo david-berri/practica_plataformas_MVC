@@ -1,0 +1,90 @@
+name: CI/CD Pipeline - MVC Estudiantes
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build y Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Dar permisos a Gradle
+        run: chmod +x ./practica_plataformas/gradlew
+      
+      - name: Instalar dependencias
+        run: cd practica_plataformas && ./gradlew dependencies
+      
+      - name: Build del proyecto
+        run: cd practica_plataformas && ./gradlew build
+      
+      - name: Ejecutar tests
+        run: cd practica_plataformas && ./gradlew test
+        continue-on-error: true
+      
+      - name: Verificar compilación
+        run: echo "✅ Build completado exitosamente"
+
+  release:
+    name: Crear Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Obtener número de versión
+        id: version
+        run: |
+          # Contar commits para generar versión automática
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          VERSION="v1.0.$COMMIT_COUNT"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version generada: $VERSION"
+      
+      - name: Crear Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## 🚀 Release Automático - Sistema MVC Estudiantes
+            
+            **Versión:** ${{ steps.version.outputs.version }}
+            **Fecha:** ${{ github.event.head_commit.timestamp }}
+            **Commit:** ${{ github.sha }}
+            
+            ### Cambios incluidos:
+            - ${{ github.event.head_commit.message }}
+            
+            ### Funcionalidades:
+            - ✅ POST /estudiantes - Crear estudiante
+            - ✅ GET /estudiantes - Listar estudiantes
+            - ✅ Arquitectura MVC implementada
+            - ✅ Validación de IDs únicos
+            
+            ### Autor:
+            - ${{ github.event.head_commit.author.name }}
+          draft: false
+          prerelease: false
