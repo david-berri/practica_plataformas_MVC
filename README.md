@@ -1,4 +1,5 @@
 # practica_plataformas_MVC
-#hacer el build del gradle
-# correr la pagina
-#en el buscador http://localhost:6002/
+#00547257 David Berrio
+#ejecutar gradle en el build 
+# Ejecutar pagina y abrir http://localhost:6002/
+
