@@ -31,9 +31,7 @@ public class Model_act {
         }
 
         public void setName(String name) {
-            if (name != null && name.matches(".*\\d.*")) {
-                throw new IllegalArgumentException("El nombre no puede contener números");
-            }
+            
             this.name = name;
         }
 
