@@ -2,95 +2,98 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Estudiantes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="container mt-5">
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
 
-        <h2 class="text-center mb-4">Gestor de Estudiantes</h2>
+            <h2 class="text-center mb-4">Gestor de Estudiantes</h2>
 
-        <!-- Formulario -->
-        <div class="card p-4 mb-4 shadow">
-            <input type="number" id="id" class="form-control mb-2" placeholder="ID" min="1">
-            <input type="text" id="name" class="form-control mb-2" placeholder="Nombre">
-            <input type="text" id="carrera" class="form-control mb-3" placeholder="Carrera">
+            <!-- Formulario de Registro -->
+            <div class="card p-4 mb-4 shadow">
+                <input type="number" id="id" class="form-control mb-2" placeholder="ID" min="1">
+                <input type="text" id="name" class="form-control mb-2" placeholder="Nombre">
+                <input type="text" id="carrera" class="form-control mb-3" placeholder="Carrera">
+                <button onclick="crearEstudiante()" class="btn btn-success w-100">Crear Estudiante</button>
+            </div>
 
-            <button onclick="crearUsuario()" class="btn btn-success w-100">
-                Crear Estudiante
-            </button>
+            <!-- Lista de Estudiantes -->
+            <div id="lista" class="list-group"></div>
+
         </div>
-
-        <!-- Lista -->
-        <div id="lista" class="list-group"></div>
-
     </div>
-</div>
 
-<script>
+    <script>
+        window.onload = cargarEstudiantes;
 
-    // Cargar usuarios al iniciar
-    window.onload = cargarUsuarios;
+        /** Obtiene y muestra la lista de estudiantes */
+        function cargarEstudiantes() {
+            fetch('/estudiantes')
+                .then(res => res.json())
+                .then(data => {
+                    const lista = document.getElementById('lista');
 
-    function cargarUsuarios() {
-        fetch('/api/users')
-            .then(res => res.json())
-            .then(data => {
-                const lista = document.getElementById('lista');
+                    if (data.length === 0) {
+                        lista.innerHTML = '<div class="list-group-item text-muted text-center">No hay estudiantes registrados. ¡Agrega uno!</div>';
+                        return;
+                    }
 
-                if (data.length === 0) {
-                    lista.innerHTML = `<div class="list-group-item text-muted">No hay estudiantes</div>`;
-                    return;
-                }
-
-                lista.innerHTML = data.map(u => `
-                    <div class="list-group-item">
-                        <strong>${u.id}</strong> - ${u.name}
-                        <br>
-                        <small>${u.carrera}</small>
-                    </div>
-                `).join('');
-            });
-    }
-
-    function crearUsuario() {
-        const id = document.getElementById('id').value;
-        const name = document.getElementById('name').value;
-        const carrera = document.getElementById('carrera').value;
-
-        if (!id || !name || !carrera) {
-            alert("Completa todos los campos");
-            return;
+                    lista.innerHTML = data.map(u => `
+                        <div class="list-group-item">
+                            <strong>ID: ${u.id}</strong> - ${u.name}
+                            <br>
+                            <small class="text-muted">Carrera: ${u.carrera}</small>
+                        </div>
+                    `).join('');
+                })
+                .catch(() => alert('Error al cargar estudiantes'));
         }
 
-        fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: Number(id),
-                name: name,
-                carrera: carrera
-            })
-        })
-        .then(res => {
-            if (res.status === 201) {
-                cargarUsuarios();
-                limpiarFormulario();
-            } else if (res.status === 409) {
-                alert("El ID ya existe");
+        /** Crea un nuevo estudiante */
+        function crearEstudiante() {
+            const id = document.getElementById('id').value;
+            const name = document.getElementById('name').value;
+            const carrera = document.getElementById('carrera').value;
+
+            if (!id || !name || !carrera) {
+                alert('Por favor completa todos los campos');
+                return;
             }
-        });
-    }
 
-    function limpiarFormulario() {
-        document.getElementById('id').value = "";
-        document.getElementById('name').value = "";
-        document.getElementById('carrera').value = "";
-    }
+            fetch('/estudiantes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: Number(id),
+                    name: name,
+                    carrera: carrera
+                })
+            })
+            .then(res => {
+                if (res.status === 201) {
+                    alert('Estudiante creado exitosamente');
+                    cargarEstudiantes();
+                    limpiarFormulario();
+                } else if (res.status === 409) {
+                    alert('Error: El ID ya existe');
+                } else {
+                    alert('Error al crear estudiante');
+                }
+            })
+            .catch(() => alert('Error de conexión'));
+        }
 
-</script>
+        /** Limpia los campos del formulario */
+        function limpiarFormulario() {
+            document.getElementById('id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('carrera').value = '';
+        }
+    </script>
 
 </body>
 </html>
