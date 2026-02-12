@@ -7,133 +7,90 @@
 </head>
 <body class="container mt-5">
 
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+<div class="row justify-content-center">
+    <div class="col-md-6">
 
-            <h2 class="text-center mb-4">Gestor de Estudiantes (REST API)</h2>
+        <h2 class="text-center mb-4">Gestor de Estudiantes</h2>
 
-            <div class="card p-4 mb-4 shadow">
-                <div class="mb-3">
-                    <label for="id" class="form-label">ID:</label>
-                    <input type="number" id="id" class="form-control" placeholder="Ej: 1" required min="1" step="1">
-                </div>
-                <div class="mb-3">
-                    <label for="name" class="form-label">Nombre:</label>
-                    <input type="text" id="name" class="form-control" placeholder="Nombre completo" required>
-                </div>
-                <div class="mb-3">
-                    <label for="carrera" class="form-label">Carrera:</label>
-                    <input type="text" id="carrera" class="form-control" placeholder="Ej: Ingeniería de Sistemas" required>
-                </div>
-                <button onclick="agregarEstudiante()" class="btn btn-success w-100 py-2">
-                    Crear Estudiante
-                </button>
-            </div>
+        <!-- Formulario -->
+        <div class="card p-4 mb-4 shadow">
+            <input type="number" id="id" class="form-control mb-2" placeholder="ID" min="1">
+            <input type="text" id="name" class="form-control mb-2" placeholder="Nombre">
+            <input type="text" id="carrera" class="form-control mb-3" placeholder="Carrera">
 
-            <h5 class="mt-4 mb-3">Lista de estudiantes registrados</h5>
-            <div class="list-group shadow-sm" id="estudiantesList">
-                <div class="list-group-item text-center text-muted">
-                    Cargando estudiantes...
-                </div>
-            </div>
-
+            <button onclick="crearUsuario()" class="btn btn-success w-100">
+                Crear Estudiante
+            </button>
         </div>
+
+        <!-- Lista -->
+        <div id="lista" class="list-group"></div>
+
     </div>
+</div>
 
-    <script>
-        window.onload = function () {
-            cargarEstudiantes();
-        };
+<script>
 
-        // GET /api/users  → lista estudiantes
-        function cargarEstudiantes() {
-            fetch('/api/users')
-                .then(response => {
-                    if (!response.ok) throw new Error('Error al cargar los estudiantes');
-                    return response.json();
-                })
-                .then(estudiantes => {
-                    const container = document.getElementById('estudiantesList');
+    // Cargar usuarios al iniciar
+    window.onload = cargarUsuarios;
 
-                    if (estudiantes.length === 0) {
-                        container.innerHTML = `
-                            <div class="list-group-item text-center text-muted">
-                                No hay estudiantes registrados todavía
-                            </div>`;
-                        return;
-                    }
+    function cargarUsuarios() {
+        fetch('/api/users')
+            .then(res => res.json())
+            .then(data => {
+                const lista = document.getElementById('lista');
 
-                    container.innerHTML = estudiantes.map(e => `
-                        <div class="list-group-item">
-                            <strong>ID:</strong> ${e.id}  
-                            <strong>→</strong> ${e.name}  
-                            <br>
-                            <small class="text-muted">Carrera:</small> ${e.carrera || 'No especificada'}
-                        </div>
-                    `).join('');
-                })
-                .catch(error => {
-                    console.error(error);
-                    document.getElementById('estudiantesList').innerHTML = `
-                        <div class="alert alert-danger text-center">
-                            No se pudieron cargar los estudiantes
-                        </div>`;
-                });
+                if (data.length === 0) {
+                    lista.innerHTML = `<div class="list-group-item text-muted">No hay estudiantes</div>`;
+                    return;
+                }
+
+                lista.innerHTML = data.map(u => `
+                    <div class="list-group-item">
+                        <strong>${u.id}</strong> - ${u.name}
+                        <br>
+                        <small>${u.carrera}</small>
+                    </div>
+                `).join('');
+            });
+    }
+
+    function crearUsuario() {
+        const id = document.getElementById('id').value;
+        const name = document.getElementById('name').value;
+        const carrera = document.getElementById('carrera').value;
+
+        if (!id || !name || !carrera) {
+            alert("Completa todos los campos");
+            return;
         }
 
-        // POST /api/users  → crea estudiante
-        function agregarEstudiante() {
-            const idInput      = document.getElementById('id');
-            const nameInput    = document.getElementById('name');
-            const carreraInput = document.getElementById('carrera');
-
-            const id      = idInput.value.trim();
-            const name    = nameInput.value.trim();
-            const carrera = carreraInput.value.trim();
-
-            if (!id || !name || !carrera) {
-                alert('Por favor completa todos los campos');
-                return;
-            }
-
-            const nuevoEstudiante = {
-                id: parseInt(id),
+        fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: Number(id),
                 name: name,
                 carrera: carrera
-            };
-
-            fetch('/api/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(nuevoEstudiante)
             })
-            .then(response => {
-                if (response.status === 201) {
-                    alert('Estudiante creado exitosamente');
-                    idInput.value = '';
-                    nameInput.value = '';
-                    carreraInput.value = '';
-                    cargarEstudiantes();
-                    return;
-                }
+        })
+        .then(res => {
+            if (res.status === 201) {
+                cargarUsuarios();
+                limpiarFormulario();
+            } else if (res.status === 409) {
+                alert("El ID ya existe");
+            }
+        });
+    }
 
-                if (response.status === 409) {
-                    alert('Error: Ya existe un estudiante con ese ID');
-                    return;
-                }
+    function limpiarFormulario() {
+        document.getElementById('id').value = "";
+        document.getElementById('name').value = "";
+        document.getElementById('carrera').value = "";
+    }
 
-                // Otros errores
-                return response.text().then(msg => {
-                    throw new Error(msg || `Error inesperado (${response.status})`);
-                });
-            })
-            .catch(error => {
-                console.error(error);
-                alert('No se pudo crear el estudiante:\n' + error.message);
-            });
-        }
-    </script>
+</script>
+
 </body>
 </html>
